@@ -2,6 +2,9 @@ const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
+// 常量配置
+const AUTO_REFRESH_INTERVAL = 30000; // 自动刷新间隔：30 秒
+
 // DOM 元素
 const goalWindow = document.getElementById('goalWindow');
 const controlBtn = document.getElementById('controlBtn');
@@ -33,6 +36,8 @@ let config = {};
 let displayMode = 'carousel'; // 'carousel' 或 'parallel'
 let carouselTimer = null;
 let currentCarouselIndex = 0;
+let autoRefreshTimer = null; // 自动刷新定时器
+let carouselAnimationHandler = null; // 轮播动画监听器
 
 // 初始化
 init();
@@ -67,6 +72,9 @@ async function init() {
     
     // 加载所有分类的文件
     loadAllCategories();
+    
+    // 启动自动刷新（每 30 秒刷新一次）
+    startAutoRefresh();
   });
   
   // 监听透明度变化
@@ -300,7 +308,9 @@ newGoalBtn.addEventListener('click', () => {
 });
 
 // 清空按钮
-clearBtn.addEventListener('click', () => {
+clearBtn.addEventListener('click', (e) => {
+  e.stopPropagation(); // 阻止事件冒泡
+  
   // 清空当前分类的已选文件
   if (selectedFiles[currentCategory] && selectedFiles[currentCategory].length > 0) {
     // 确认对话框
@@ -351,6 +361,27 @@ function refreshGoalDisplay() {
   } else if (categories.includes(displayMode)) {
     // 单独分类模式：刷新该分类
     showSingleCategory(displayMode);
+  }
+}
+
+// 启动自动刷新
+function startAutoRefresh() {
+  // 清除旧的定时器
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer);
+  }
+  
+  // 每 30 秒自动刷新一次目标显示
+  autoRefreshTimer = setInterval(() => {
+    refreshGoalDisplay();
+  }, AUTO_REFRESH_INTERVAL);
+}
+
+// 停止自动刷新
+function stopAutoRefresh() {
+  if (autoRefreshTimer) {
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
   }
 }
 
@@ -476,12 +507,12 @@ function renderGoals(goals, container) {
 function applyOpacity(opacity) {
   const opacityValue = opacity || 0.95;
   goalWindow.style.background = `rgba(248, 247, 255, ${opacityValue})`;
-  console.log('应用透明度:', opacityValue); // 调试日志
 }
 
 // 应用滚动速度
 function applyScrollSpeed(speed) {
-  scrollContent.style.animationDuration = `${speed}s`;
+  // 保持无限循环动画
+  scrollContent.style.animation = `scroll ${speed}s linear infinite`;
 }
 
 // 保存配置
@@ -530,7 +561,20 @@ function switchDisplayMode(mode) {
 function showSingleCategory(category) {
   const goalsByCategory = collectGoalsByCategory();
   const goals = goalsByCategory[category] || [];
+  
+  // 先移除动画，立即显示内容
+  scrollContent.style.animation = 'none';
+  scrollContent.style.transform = 'translateX(0)';
+  
+  // 渲染目标
   renderGoals(goals, scrollContent);
+  
+  // 强制重排，然后重新启动动画
+  void scrollContent.offsetWidth;
+  
+  // 重新应用滚动动画
+  const speed = config.scrollSpeed || 120;
+  scrollContent.style.animation = `scroll ${speed}s linear infinite`;
 }
 
 // 更新模式按钮状态
@@ -573,8 +617,8 @@ function startCarousel() {
   // 显示第一个分类
   showCarouselCategory(categories[currentCarouselIndex], allGoals);
   
-  // 设置定时器
-  carouselTimer = setInterval(() => {
+  // 创建动画迭代监听器（每次滚动动画完成一轮时触发）
+  carouselAnimationHandler = () => {
     // 找到下一个有目标的分类
     let attempts = 0;
     const maxAttempts = categories.length;
@@ -592,7 +636,10 @@ function startCarousel() {
     
     const category = categories[currentCarouselIndex];
     showCarouselCategory(category, allGoals);
-  }, calculateCarouselDuration(allGoals[categories[currentCarouselIndex]]));
+  };
+  
+  // 添加监听器（监听动画每完成一次迭代）
+  scrollContent.addEventListener('animationiteration', carouselAnimationHandler);
 }
 
 // 停止轮播
@@ -601,21 +648,31 @@ function stopCarousel() {
     clearInterval(carouselTimer);
     carouselTimer = null;
   }
-}
-
-// 计算轮播时长（智能时长）
-function calculateCarouselDuration(goals) {
-  if (!goals || goals.length === 0) return 30000; // 默认30秒
   
-  // 基础时长：每个目标3秒，最少20秒，最多60秒
-  const duration = Math.max(20000, Math.min(60000, goals.length * 3000));
-  return duration;
+  // 移除动画监听器
+  if (carouselAnimationHandler) {
+    scrollContent.removeEventListener('animationiteration', carouselAnimationHandler);
+    carouselAnimationHandler = null;
+  }
 }
 
 // 显示轮播分类
 function showCarouselCategory(category, allGoals) {
   const goals = allGoals[category] || [];
+  
+  // 先移除动画，立即显示内容
+  scrollContent.style.animation = 'none';
+  scrollContent.style.transform = 'translateX(0)';
+  
+  // 渲染目标
   renderGoals(goals, scrollContent);
+  
+  // 强制重排，然后重新启动动画
+  void scrollContent.offsetWidth;
+  
+  // 重新应用滚动动画
+  const speed = config.scrollSpeed || 120;
+  scrollContent.style.animation = `scroll ${speed}s linear infinite`;
 }
 
 // 按分类收集目标
@@ -652,10 +709,29 @@ function collectGoalsByCategory() {
 function refreshParallelDisplay() {
   const goalsByCategory = collectGoalsByCategory();
   
-  renderGoals(goalsByCategory['年目标'] || [], scrollYear);
-  renderGoals(goalsByCategory['月目标'] || [], scrollMonth);
-  renderGoals(goalsByCategory['周目标'] || [], scrollWeek);
-  renderGoals(goalsByCategory['行事历'] || [], scrollDay);
+  // 为每个滚动区域应用动画修复
+  const scrollContainers = [
+    { container: scrollYear, goals: goalsByCategory['年目标'] || [] },
+    { container: scrollMonth, goals: goalsByCategory['月目标'] || [] },
+    { container: scrollWeek, goals: goalsByCategory['周目标'] || [] },
+    { container: scrollDay, goals: goalsByCategory['行事历'] || [] }
+  ];
+  
+  scrollContainers.forEach(({ container, goals }) => {
+    // 先移除动画，立即显示内容
+    container.style.animation = 'none';
+    container.style.transform = 'translateX(0)';
+    
+    // 渲染目标
+    renderGoals(goals, container);
+    
+    // 强制重排，然后重新启动动画
+    void container.offsetWidth;
+    
+    // 重新应用滚动动画
+    const speed = config.scrollSpeed || 120;
+    container.style.animation = `scroll ${speed}s linear infinite`;
+  });
 }
 
 // 点击窗口外部关闭菜单

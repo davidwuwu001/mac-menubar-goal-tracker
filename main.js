@@ -255,7 +255,7 @@ ipcMain.on('save-config', (event, config) => {
 ipcMain.on('get-config', (event) => {
   const config = {
     opacity: store.get('opacity', 0.95),
-    scrollSpeed: store.get('scrollSpeed', 60),
+    scrollSpeed: store.get('scrollSpeed', 120), // 默认 120 秒（2 分钟）
     scrollPaused: store.get('scrollPaused', false),
     displayMode: store.get('displayMode', 'carousel'),
     selectedFiles: store.get('selectedFiles', {}),
