@@ -20,3 +20,11 @@ build/
 # 临时文件
 *.tmp
 *.temp
+
+# 设计文件
+*.pen
+*.svg
+
+# 开发脚本
+create-*.js
+generate-*.js
