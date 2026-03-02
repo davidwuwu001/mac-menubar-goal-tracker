@@ -342,16 +342,19 @@ modeBtns.forEach(btn => {
 
 // 刷新目标显示
 function refreshGoalDisplay() {
+  console.log('=== refreshGoalDisplay 被调用, 当前模式:', displayMode);
   const categories = ['年目标', '月目标', '周目标', '行事历'];
   
   if (displayMode === 'carousel') {
-    // 轮播模式：重新启动轮播
-    startCarousel();
+    // 轮播模式:重新收集目标数据,但不重启轮播
+    // 下一次轮播切换时会自动使用新数据
+    console.log('轮播模式,跳过刷新');
+    return;
   } else if (displayMode === 'parallel') {
-    // 并排模式：刷新四个区域
+    // 并排模式:刷新四个区域
     refreshParallelDisplay();
   } else if (categories.includes(displayMode)) {
-    // 单独分类模式：刷新该分类
+    // 单独分类模式:刷新该分类
     showSingleCategory(displayMode);
   }
 }
@@ -590,6 +593,7 @@ function updateModeButtons(mode) {
 
 // 开始轮播
 function startCarousel() {
+  console.log('=== startCarousel 被调用 ===');
   stopCarousel();
   
   const categories = ['年目标', '月目标', '周目标', '行事历'];
@@ -616,6 +620,8 @@ function startCarousel() {
   
   // 定义动画结束处理器
   carouselAnimationHandler = () => {
+    console.log('动画结束,当前分类:', categories[currentCarouselIndex]);
+    
     // 找到下一个有目标的分类
     let attempts = 0;
     const maxAttempts = categories.length;
@@ -626,19 +632,23 @@ function startCarousel() {
       
       // 如果尝试了所有分类都没有目标,停止轮播
       if (attempts >= maxAttempts) {
+        console.log('所有分类都没有目标,停止轮播');
         stopCarousel();
         return;
       }
     } while (!allGoals[categories[currentCarouselIndex]] || allGoals[categories[currentCarouselIndex]].length === 0);
     
     const category = categories[currentCarouselIndex];
+    console.log('切换到下一个分类:', category);
     showCarouselCategory(category, allGoals, true);
   };
   
+  console.log('添加事件监听器');
   // 添加事件监听器
   scrollContent.addEventListener('animationend', carouselAnimationHandler);
   
   // 显示第一个分类
+  console.log('显示第一个分类:', categories[currentCarouselIndex]);
   showCarouselCategory(categories[currentCarouselIndex], allGoals, true);
 }
 
@@ -660,6 +670,8 @@ function stopCarousel() {
 function showCarouselCategory(category, allGoals, isCarousel = false) {
   const goals = allGoals[category] || [];
   
+  console.log(`显示分类: ${category}, 目标数量: ${goals.length}, 轮播模式: ${isCarousel}`);
+  
   // 渲染目标
   renderGoals(goals, scrollContent);
   
@@ -672,16 +684,25 @@ function showCarouselCategory(category, allGoals, isCarousel = false) {
   
   // 获取内容实际宽度
   const contentWidth = scrollContent.scrollWidth;
+  console.log(`内容宽度: ${contentWidth}px`);
   
   // 获取速度参数(像素/秒)
   const speedParam = config.scrollSpeed || 120;
   
   // 计算动画时长 = 内容宽度 / 速度参数
   const duration = contentWidth / speedParam;
+  console.log(`动画时长: ${duration.toFixed(2)}秒, 速度参数: ${speedParam}`);
   
   if (isCarousel) {
     // 轮播模式
-    scrollContent.style.animation = `scroll ${duration}s linear forwards`;
+    const animationValue = `scroll ${duration}s linear forwards`;
+    console.log(`设置动画: ${animationValue}`);
+    scrollContent.style.animation = animationValue;
+    
+    // 检查动画是否正确应用
+    setTimeout(() => {
+      console.log('1秒后检查动画状态:', scrollContent.style.animation);
+    }, 1000);
   } else {
     // 单独显示模式
     scrollContent.style.animation = `scroll ${duration}s linear infinite`;
