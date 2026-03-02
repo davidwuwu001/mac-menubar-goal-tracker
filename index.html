@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>目标追踪器</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="goal-window" id="goalWindow">
+    <!-- 轮播模式（默认） -->
+    <div class="carousel-mode" id="carouselMode">
+      <div class="top-bar">
+        <div class="scroll-area" id="scrollArea">
+          <div class="scroll-content" id="scrollContent"></div>
+        </div>
+        <button class="control-btn" id="controlBtn">
+          <span class="arrow-icon">▼</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 并排模式 -->
+    <div class="parallel-mode" id="parallelMode" style="display: none;">
+      <div class="parallel-row">
+        <div class="parallel-section">
+          <div class="scroll-area">
+            <div class="scroll-content" id="scrollYear"></div>
+          </div>
+        </div>
+        <div class="parallel-section">
+          <div class="scroll-area">
+            <div class="scroll-content" id="scrollMonth"></div>
+          </div>
+        </div>
+      </div>
+      <div class="parallel-row">
+        <div class="parallel-section">
+          <div class="scroll-area">
+            <div class="scroll-content" id="scrollWeek"></div>
+          </div>
+        </div>
+        <div class="parallel-section">
+          <div class="scroll-area">
+            <div class="scroll-content" id="scrollDay"></div>
+          </div>
+        </div>
+      </div>
+      <button class="control-btn" id="controlBtnParallel">
+        <span class="arrow-icon">▼</span>
+      </button>
+    </div>
+
+    <!-- 下拉菜单区域 -->
+    <div class="menu-area" id="menuArea">
+      <!-- 显示模式切换 -->
+      <div class="mode-selector">
+        <button class="mode-btn active" data-mode="carousel">轮播</button>
+        <button class="mode-btn" data-mode="parallel">并排</button>
+        <button class="mode-btn" data-mode="年目标">年</button>
+        <button class="mode-btn" data-mode="月目标">月</button>
+        <button class="mode-btn" data-mode="周目标">周</button>
+        <button class="mode-btn" data-mode="行事历">日</button>
+      </div>
+      
+      <h2 class="menu-header">选择目标</h2>
+      
+      <!-- 标签页 -->
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-category="年目标">年目标</button>
+        <button class="tab" data-category="月目标">月目标</button>
+        <button class="tab" data-category="周目标">周目标</button>
+        <button class="tab" data-category="行事历">行事历</button>
+      </div>
+
+      <!-- 文件列表 -->
+      <div class="file-list" id="fileList">
+        <!-- 动态生成文件列表 -->
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="footer">
+        <button class="settings-btn" id="clearBtn">清空</button>
+        <button class="settings-btn" id="newGoalBtn">新增目标</button>
+        <button class="settings-btn" id="settingsBtn">设置目录</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# 依赖包
+node_modules/
+
+# 系统文件
+.DS_Store
+*.log
+
+# Electron 打包输出
+dist/
+out/
+build/
+
+# 配置文件（包含用户数据）
+~/Library/Application Support/goal-tracker/
+
+# IDE
+.vscode/
+.idea/
+
+# 临时文件
+*.tmp
+*.temp
