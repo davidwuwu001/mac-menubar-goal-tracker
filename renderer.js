@@ -562,14 +562,13 @@ function showSingleCategory(category) {
   const goalsByCategory = collectGoalsByCategory();
   const goals = goalsByCategory[category] || [];
   
-  // 先移除动画，立即显示内容
-  scrollContent.style.animation = 'none';
-  scrollContent.style.transform = 'translateX(0)';
-  
   // 渲染目标
   renderGoals(goals, scrollContent);
   
-  // 强制重排，然后重新启动动画
+  // 移除内联 transform（让 CSS 动画接管）
+  scrollContent.style.transform = '';
+  
+  // 强制重排，确保动画重新开始
   void scrollContent.offsetWidth;
   
   // 重新应用滚动动画
@@ -660,14 +659,13 @@ function stopCarousel() {
 function showCarouselCategory(category, allGoals) {
   const goals = allGoals[category] || [];
   
-  // 先移除动画，立即显示内容
-  scrollContent.style.animation = 'none';
-  scrollContent.style.transform = 'translateX(0)';
-  
   // 渲染目标
   renderGoals(goals, scrollContent);
   
-  // 强制重排，然后重新启动动画
+  // 移除内联 transform（让 CSS 动画接管）
+  scrollContent.style.transform = '';
+  
+  // 强制重排，确保动画重新开始
   void scrollContent.offsetWidth;
   
   // 重新应用滚动动画
@@ -718,14 +716,13 @@ function refreshParallelDisplay() {
   ];
   
   scrollContainers.forEach(({ container, goals }) => {
-    // 先移除动画，立即显示内容
-    container.style.animation = 'none';
-    container.style.transform = 'translateX(0)';
-    
     // 渲染目标
     renderGoals(goals, container);
     
-    // 强制重排，然后重新启动动画
+    // 移除内联 transform（让 CSS 动画接管）
+    container.style.transform = '';
+    
+    // 强制重排，确保动画重新开始
     void container.offsetWidth;
     
     // 重新应用滚动动画
