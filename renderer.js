@@ -4,6 +4,7 @@ const path = require('path');
 
 // 常量配置
 const AUTO_REFRESH_INTERVAL = 30000; // 自动刷新间隔：30 秒
+const CAROUSEL_SWITCH_INTERVAL = 15000; // 轮播切换间隔：15 秒
 
 // DOM 元素
 const goalWindow = document.getElementById('goalWindow');
@@ -37,7 +38,6 @@ let displayMode = 'carousel'; // 'carousel' 或 'parallel'
 let carouselTimer = null;
 let currentCarouselIndex = 0;
 let autoRefreshTimer = null; // 自动刷新定时器
-let carouselAnimationHandler = null; // 轮播动画监听器
 
 // 初始化
 init();
@@ -616,8 +616,8 @@ function startCarousel() {
   // 显示第一个分类
   showCarouselCategory(categories[currentCarouselIndex], allGoals);
   
-  // 创建动画迭代监听器（每次滚动动画完成一轮时触发）
-  carouselAnimationHandler = () => {
+  // 使用定时器定期切换分类（每 15 秒切换一次）
+  carouselTimer = setInterval(() => {
     // 找到下一个有目标的分类
     let attempts = 0;
     const maxAttempts = categories.length;
@@ -635,10 +635,7 @@ function startCarousel() {
     
     const category = categories[currentCarouselIndex];
     showCarouselCategory(category, allGoals);
-  };
-  
-  // 添加监听器（监听动画每完成一次迭代）
-  scrollContent.addEventListener('animationiteration', carouselAnimationHandler);
+  }, CAROUSEL_SWITCH_INTERVAL);
 }
 
 // 停止轮播
@@ -646,12 +643,6 @@ function stopCarousel() {
   if (carouselTimer) {
     clearInterval(carouselTimer);
     carouselTimer = null;
-  }
-  
-  // 移除动画监听器
-  if (carouselAnimationHandler) {
-    scrollContent.removeEventListener('animationiteration', carouselAnimationHandler);
-    carouselAnimationHandler = null;
   }
 }
 
