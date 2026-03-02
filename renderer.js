@@ -614,10 +614,10 @@ function startCarousel() {
   currentCarouselIndex = startIndex;
   
   // 显示第一个分类
-  showCarouselCategory(categories[currentCarouselIndex], allGoals);
+  showCarouselCategory(categories[currentCarouselIndex], allGoals, true);
   
-  // 使用定时器定期切换分类（每 15 秒切换一次）
-  carouselTimer = setInterval(() => {
+  // 监听动画结束事件（动画播放一次后触发）
+  const handleAnimationEnd = () => {
     // 找到下一个有目标的分类
     let attempts = 0;
     const maxAttempts = categories.length;
@@ -634,8 +634,14 @@ function startCarousel() {
     } while (!allGoals[categories[currentCarouselIndex]] || allGoals[categories[currentCarouselIndex]].length === 0);
     
     const category = categories[currentCarouselIndex];
-    showCarouselCategory(category, allGoals);
-  }, CAROUSEL_SWITCH_INTERVAL);
+    showCarouselCategory(category, allGoals, true);
+  };
+  
+  // 移除旧的监听器
+  scrollContent.removeEventListener('animationend', handleAnimationEnd);
+  
+  // 添加新的监听器
+  scrollContent.addEventListener('animationend', handleAnimationEnd);
 }
 
 // 停止轮播
@@ -647,7 +653,7 @@ function stopCarousel() {
 }
 
 // 显示轮播分类
-function showCarouselCategory(category, allGoals) {
+function showCarouselCategory(category, allGoals, isCarousel = false) {
   const goals = allGoals[category] || [];
   
   // 渲染目标
@@ -661,7 +667,14 @@ function showCarouselCategory(category, allGoals) {
   
   // 重新应用滚动动画
   const speed = config.scrollSpeed || 120;
-  scrollContent.style.animation = `scroll ${speed}s linear infinite`;
+  
+  // 轮播模式：动画只播放一次（forwards），播放完触发 animationend 事件
+  // 非轮播模式：动画无限循环（infinite）
+  if (isCarousel) {
+    scrollContent.style.animation = `scroll ${speed}s linear forwards`;
+  } else {
+    scrollContent.style.animation = `scroll ${speed}s linear infinite`;
+  }
 }
 
 // 按分类收集目标
