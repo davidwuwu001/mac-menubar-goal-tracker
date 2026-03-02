@@ -38,6 +38,7 @@ let displayMode = 'carousel'; // 'carousel' 或 'parallel'
 let carouselTimer = null;
 let currentCarouselIndex = 0;
 let autoRefreshTimer = null; // 自动刷新定时器
+let carouselAnimationHandler = null; // 轮播动画结束处理器
 
 // 初始化
 init();
@@ -135,11 +136,8 @@ async function init() {
 function loadAllCategories() {
   const categories = ['年目标', '月目标', '周目标', '行事历'];
   
-  console.log('开始加载分类，当前 directories:', directories); // 调试日志
-  
   categories.forEach(category => {
     const dirPath = directories[category];
-    console.log(`处理分类 ${category}，目录路径:`, dirPath); // 调试日志
     
     if (dirPath && typeof dirPath === 'string' && fs.existsSync(dirPath)) {
       try {
@@ -153,9 +151,7 @@ function loadAllCategories() {
         // 存储文件列表到 filesByCategory
         filesByCategory[category] = files;
         
-        console.log(`${category} 找到 ${files.length} 个文件:`, files); // 调试日志
-        
-        // 首次启动，自动选中第一个文件
+        // 首次启动,自动选中第一个文件
         if (!selectedFiles[category] && files.length > 0) {
           selectedFiles[category] = [files[0].path];
           saveConfig();
@@ -163,8 +159,6 @@ function loadAllCategories() {
       } catch (error) {
         console.error(`加载 ${category} 目录失败:`, error);
       }
-    } else {
-      console.log(`${category} 目录不存在或无效`); // 调试日志
     }
   });
   
@@ -172,7 +166,7 @@ function loadAllCategories() {
   if (filesByCategory[currentCategory]) {
     renderFileList(filesByCategory[currentCategory]);
   } else {
-    fileList.innerHTML = '<div style="text-align: center; color: #6B5B8A; padding: 20px;">暂无文件，请先设置目录</div>';
+    fileList.innerHTML = '<div style="text-align: center; color: #6B5B8A; padding: 20px;">暂无文件,请先设置目录</div>';
   }
   
   // 刷新目标显示
@@ -228,8 +222,6 @@ tabs.forEach(tab => {
     
     // 更新当前分类
     currentCategory = tab.dataset.category;
-    
-    console.log('切换到分类:', currentCategory); // 调试日志
     
     // 渲染文件列表
     if (filesByCategory[currentCategory] && filesByCategory[currentCategory].length > 0) {
@@ -565,15 +557,24 @@ function showSingleCategory(category) {
   // 渲染目标
   renderGoals(goals, scrollContent);
   
-  // 移除内联 transform（让 CSS 动画接管）
+  // 移除内联样式
   scrollContent.style.transform = '';
+  scrollContent.style.animation = '';
   
-  // 强制重排，确保动画重新开始
+  // 强制重排
   void scrollContent.offsetWidth;
   
-  // 重新应用滚动动画
-  const speed = config.scrollSpeed || 120;
-  scrollContent.style.animation = `scroll ${speed}s linear infinite`;
+  // 获取内容实际宽度
+  const contentWidth = scrollContent.scrollWidth;
+  
+  // 获取速度参数(像素/秒)
+  const speedParam = config.scrollSpeed || 120;
+  
+  // 计算动画时长
+  const duration = contentWidth / speedParam;
+  
+  // 应用动画
+  scrollContent.style.animation = `scroll ${duration}s linear infinite`;
 }
 
 // 更新模式按钮状态
@@ -597,7 +598,7 @@ function startCarousel() {
   // 检查是否有任何目标
   const hasAnyGoals = Object.values(allGoals).some(goals => goals && goals.length > 0);
   if (!hasAnyGoals) {
-    // 没有任何目标，显示提示信息
+    // 没有任何目标,显示提示信息
     scrollContent.innerHTML = '<div class="goal-item"><span class="goal-text">暂无目标</span></div>';
     return;
   }
@@ -613,11 +614,8 @@ function startCarousel() {
   
   currentCarouselIndex = startIndex;
   
-  // 显示第一个分类
-  showCarouselCategory(categories[currentCarouselIndex], allGoals, true);
-  
-  // 监听动画结束事件（动画播放一次后触发）
-  const handleAnimationEnd = () => {
+  // 定义动画结束处理器
+  carouselAnimationHandler = () => {
     // 找到下一个有目标的分类
     let attempts = 0;
     const maxAttempts = categories.length;
@@ -626,7 +624,7 @@ function startCarousel() {
       currentCarouselIndex = (currentCarouselIndex + 1) % categories.length;
       attempts++;
       
-      // 如果尝试了所有分类都没有目标，停止轮播
+      // 如果尝试了所有分类都没有目标,停止轮播
       if (attempts >= maxAttempts) {
         stopCarousel();
         return;
@@ -637,15 +635,21 @@ function startCarousel() {
     showCarouselCategory(category, allGoals, true);
   };
   
-  // 移除旧的监听器
-  scrollContent.removeEventListener('animationend', handleAnimationEnd);
+  // 添加事件监听器
+  scrollContent.addEventListener('animationend', carouselAnimationHandler);
   
-  // 添加新的监听器
-  scrollContent.addEventListener('animationend', handleAnimationEnd);
+  // 显示第一个分类
+  showCarouselCategory(categories[currentCarouselIndex], allGoals, true);
 }
 
 // 停止轮播
 function stopCarousel() {
+  // 移除事件监听器
+  if (carouselAnimationHandler) {
+    scrollContent.removeEventListener('animationend', carouselAnimationHandler);
+    carouselAnimationHandler = null;
+  }
+  
   if (carouselTimer) {
     clearInterval(carouselTimer);
     carouselTimer = null;
@@ -659,21 +663,28 @@ function showCarouselCategory(category, allGoals, isCarousel = false) {
   // 渲染目标
   renderGoals(goals, scrollContent);
   
-  // 移除内联 transform（让 CSS 动画接管）
+  // 移除内联样式
   scrollContent.style.transform = '';
+  scrollContent.style.animation = '';
   
-  // 强制重排，确保动画重新开始
+  // 强制重排
   void scrollContent.offsetWidth;
   
-  // 重新应用滚动动画
-  const speed = config.scrollSpeed || 120;
+  // 获取内容实际宽度
+  const contentWidth = scrollContent.scrollWidth;
   
-  // 轮播模式：动画只播放一次（forwards），播放完触发 animationend 事件
-  // 非轮播模式：动画无限循环（infinite）
+  // 获取速度参数(像素/秒)
+  const speedParam = config.scrollSpeed || 120;
+  
+  // 计算动画时长 = 内容宽度 / 速度参数
+  const duration = contentWidth / speedParam;
+  
   if (isCarousel) {
-    scrollContent.style.animation = `scroll ${speed}s linear forwards`;
+    // 轮播模式
+    scrollContent.style.animation = `scroll ${duration}s linear forwards`;
   } else {
-    scrollContent.style.animation = `scroll ${speed}s linear infinite`;
+    // 单独显示模式
+    scrollContent.style.animation = `scroll ${duration}s linear infinite`;
   }
 }
 
@@ -711,7 +722,7 @@ function collectGoalsByCategory() {
 function refreshParallelDisplay() {
   const goalsByCategory = collectGoalsByCategory();
   
-  // 为每个滚动区域应用动画修复
+  // 为每个滚动区域应用动画
   const scrollContainers = [
     { container: scrollYear, goals: goalsByCategory['年目标'] || [] },
     { container: scrollMonth, goals: goalsByCategory['月目标'] || [] },
@@ -723,15 +734,24 @@ function refreshParallelDisplay() {
     // 渲染目标
     renderGoals(goals, container);
     
-    // 移除内联 transform（让 CSS 动画接管）
+    // 移除内联样式
     container.style.transform = '';
+    container.style.animation = '';
     
-    // 强制重排，确保动画重新开始
+    // 强制重排
     void container.offsetWidth;
     
-    // 重新应用滚动动画
-    const speed = config.scrollSpeed || 120;
-    container.style.animation = `scroll ${speed}s linear infinite`;
+    // 获取内容实际宽度
+    const contentWidth = container.scrollWidth;
+    
+    // 获取速度参数(像素/秒)
+    const speedParam = config.scrollSpeed || 120;
+    
+    // 计算动画时长
+    const duration = contentWidth / speedParam;
+    
+    // 应用动画
+    container.style.animation = `scroll ${duration}s linear infinite`;
   });
 }
 
