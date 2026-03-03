@@ -5,10 +5,11 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac"
   },
   "keywords": ["electron", "goal", "tracker", "menubar"],
-  "author": "",
+  "author": "David Wu",
   "license": "MIT",
   "devDependencies": {
     "electron": "^28.0.0",
@@ -20,9 +21,24 @@
   },
   "build": {
     "appId": "com.goaltracker.app",
+    "productName": "目标追踪器",
     "mac": {
       "category": "public.app-category.productivity",
-      "target": ["dmg"]
+      "target": ["dmg", "zip"]
+    },
+    "files": [
+      "main.js",
+      "renderer.js",
+      "slider.js",
+      "index.html",
+      "slider.html",
+      "styles.css",
+      "slider.css",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "directories": {
+      "output": "dist"
     }
   }
 }
