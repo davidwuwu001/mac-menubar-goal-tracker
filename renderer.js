@@ -25,6 +25,7 @@ const fileList = document.getElementById('fileList');
 const settingsBtn = document.getElementById('settingsBtn');
 const newGoalBtn = document.getElementById('newGoalBtn');
 const clearBtn = document.getElementById('clearBtn');
+const selectAllBtn = document.getElementById('selectAllBtn');
 const modeBtns = document.querySelectorAll('.mode-btn');
 
 // 状态
@@ -299,26 +300,37 @@ newGoalBtn.addEventListener('click', () => {
   ipcRenderer.send('create-new-goal', currentCategory);
 });
 
+// 全选按钮
+selectAllBtn.addEventListener('click', () => {
+  // 全选当前分类的所有文件
+  if (filesByCategory[currentCategory] && filesByCategory[currentCategory].length > 0) {
+    selectedFiles[currentCategory] = filesByCategory[currentCategory].map(file => file.path);
+    saveConfig();
+    
+    // 刷新文件列表显示(全部勾选)
+    renderFileList(filesByCategory[currentCategory]);
+    
+    // 刷新目标显示
+    refreshGoalDisplay();
+  } else {
+    alert(`"${currentCategory}"当前没有文件`);
+  }
+});
+
 // 清空按钮
-clearBtn.addEventListener('click', (e) => {
-  e.stopPropagation(); // 阻止事件冒泡
-  
+clearBtn.addEventListener('click', () => {
   // 清空当前分类的已选文件
   if (selectedFiles[currentCategory] && selectedFiles[currentCategory].length > 0) {
-    // 确认对话框
-    const confirmed = confirm(`确定要清空"${currentCategory}"的所有已选文件吗？`);
-    if (confirmed) {
-      selectedFiles[currentCategory] = [];
-      saveConfig();
-      
-      // 刷新文件列表显示（取消所有勾选）
-      if (filesByCategory[currentCategory]) {
-        renderFileList(filesByCategory[currentCategory]);
-      }
-      
-      // 刷新目标显示
-      refreshGoalDisplay();
+    selectedFiles[currentCategory] = [];
+    saveConfig();
+    
+    // 刷新文件列表显示(取消所有勾选)
+    if (filesByCategory[currentCategory]) {
+      renderFileList(filesByCategory[currentCategory]);
     }
+    
+    // 刷新目标显示
+    refreshGoalDisplay();
   } else {
     alert(`"${currentCategory}"当前没有已选文件`);
   }
@@ -389,7 +401,13 @@ function parseMarkdownGoals(content) {
     // 匹配未完成的目标: - [ ] 目标文本 [日期] [百分比]
     const incompleteMatch = line.match(/^[\s-]*\[\s\]\s*(.+?)(?:\s*\[([^\]]+)\])?\s*(?:\[(\d+)%\])?$/);
     if (incompleteMatch) {
-      const text = incompleteMatch[1].trim();
+      let text = incompleteMatch[1].trim();
+      // 移除 Markdown 格式符号
+      text = text.replace(/\*\*/g, ''); // 移除粗体 **
+      text = text.replace(/\*/g, '');   // 移除斜体 *
+      text = text.replace(/~~(.+?)~~/g, '$1'); // 移除删除线 ~~
+      text = text.replace(/`(.+?)`/g, '$1');   // 移除代码 `
+      
       const dueDate = incompleteMatch[2] || null;
       const progress = incompleteMatch[3] ? parseInt(incompleteMatch[3]) : null;
       
@@ -404,7 +422,13 @@ function parseMarkdownGoals(content) {
     // 匹配已完成的目标: - [x] 目标文本 [日期] [百分比]
     const completedMatch = line.match(/^[\s-]*\[x\]\s*(.+?)(?:\s*\[([^\]]+)\])?\s*(?:\[(\d+)%\])?$/i);
     if (completedMatch) {
-      const text = completedMatch[1].trim();
+      let text = completedMatch[1].trim();
+      // 移除 Markdown 格式符号
+      text = text.replace(/\*\*/g, ''); // 移除粗体 **
+      text = text.replace(/\*/g, '');   // 移除斜体 *
+      text = text.replace(/~~(.+?)~~/g, '$1'); // 移除删除线 ~~
+      text = text.replace(/`(.+?)`/g, '$1');   // 移除代码 `
+      
       const dueDate = completedMatch[2] || null;
       const progress = completedMatch[3] ? parseInt(completedMatch[3]) : null;
       
@@ -711,6 +735,9 @@ function showCarouselCategory(category, allGoals, isCarousel = false) {
 
 // 按分类收集目标
 function collectGoalsByCategory() {
+  console.log('=== collectGoalsByCategory 被调用 ===');
+  console.log('selectedFiles:', selectedFiles);
+  
   const goalsByCategory = {
     '年目标': [],
     '月目标': [],
@@ -720,11 +747,17 @@ function collectGoalsByCategory() {
   
   Object.keys(selectedFiles).forEach(category => {
     const files = selectedFiles[category] || [];
+    console.log(`${category} 选中的文件:`, files);
+    
     files.forEach(filePath => {
       if (fs.existsSync(filePath)) {
         try {
           const content = fs.readFileSync(filePath, 'utf-8');
+          console.log(`读取文件 ${filePath}, 内容长度: ${content.length}`);
+          
           const goals = parseMarkdownGoals(content);
+          console.log(`解析出 ${goals.length} 个目标:`, goals);
+          
           goals.forEach(goal => {
             goal.category = category;
           });
@@ -732,10 +765,13 @@ function collectGoalsByCategory() {
         } catch (error) {
           console.error('读取文件失败:', error);
         }
+      } else {
+        console.log(`文件不存在: ${filePath}`);
       }
     });
   });
   
+  console.log('最终收集的目标:', goalsByCategory);
   return goalsByCategory;
 }
 
