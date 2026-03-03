@@ -32,11 +32,20 @@
 
 ## 🚀 快速开始
 
-### 环境要求
+### 方式一：下载安装包（推荐）
+
+1. 前往 [Releases](https://github.com/davidwuwu001/mac-menubar-goal-tracker/releases) 页面
+2. 下载最新版本的 `目标追踪器-x.x.x-arm64.dmg`
+3. 双击 DMG 文件，将应用拖入 Applications 文件夹
+4. 在 Launchpad 或 Applications 中找到"目标追踪器"并启动
+
+### 方式二：从源码运行
+
+#### 环境要求
 - macOS 10.13 或更高版本
 - Node.js 14.0 或更高版本
 
-### 安装依赖
+#### 安装依赖
 
 ```bash
 # 使用国内镜像源（推荐）
@@ -46,7 +55,7 @@ npm install --registry=https://registry.npmmirror.com
 npm install
 ```
 
-### 运行应用
+#### 运行应用
 
 ```bash
 npm start
@@ -119,7 +128,20 @@ npm run build
 - **Electron**：跨平台桌面应用框架
 - **Node.js**：JavaScript 运行时
 - **electron-store**：配置持久化存储
+- **electron-builder**：应用打包工具
 - **CSS3 动画**：流畅的滚动效果
+
+## 📦 打包应用
+
+```bash
+# 打包 macOS 应用（使用国内镜像）
+export ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+npm run build:mac
+```
+
+打包完成后,在 `dist/` 目录下会生成:
+- `目标追踪器-1.0.0-arm64.dmg` - DMG 安装包
+- `目标追踪器-1.0.0-arm64-mac.zip` - ZIP 压缩包
 
 ## 📂 项目结构
 
@@ -134,6 +156,7 @@ mac-menubar-goal-tracker/
 ├── slider.js            # 设置窗口逻辑
 ├── assets/              # 资源文件
 │   ├── icon.png         # 托盘图标
+├── dist/                # 打包输出目录
 │   └── ...
 ├── package.json         # 项目配置
 └── README.md            # 项目文档
